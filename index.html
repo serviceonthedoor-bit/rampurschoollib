@@ -45,7 +45,7 @@ dialog{border:0;border-radius:24px;padding:24px;width:min(460px,92vw);box-shadow
 <div id="login" hidden></div><dialog id="dlg"></dialog><div id="toast"></div>
 <script>
 const K='school_library_v1',TABS=[['dash','🏠','Dashboard'],['books','📚','Books'],['members','🎓','Students'],['issue','🔖','Issue & return'],['rec','🧾','Records'],['set','⚙️','Settings']];
-const DEFAULT_GAS='https://script.google.com/macros/s/AKfycbw34I85NRZ9kYY3g6bjiRI83cxMGwmB1RVuDTpyYKHbpvZAFox26QsRK175_DGFxhrOgw/exec';
+const DEFAULT_GAS='https://script.google.com/macros/s/AKfycbytfyMqVRWRmxxzBwo9pz_XYuUA0qhUZ1R5DEQ9CG53vKP5-E2Mju8UXtxrDOTI2kJmdQ/exec';
 let D=load(),tab='dash',q='',flt='all',fh=null,tm1,tm2,me=null,pg=0,cf='',stu=null,idle;D.users=D.users||[];
 function load(){try{const d=JSON.parse(localStorage[K]);if(d)return d}catch(e){}return{settings:{name:'',logo:'',gas:'',fine:2,days:14},books:[],members:[],issues:[],updated:0}}
 const $=id=>document.getElementById(id),h=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])),uid=()=>Math.random().toString(36).slice(2,9);
