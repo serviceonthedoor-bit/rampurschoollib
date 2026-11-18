@@ -54,6 +54,7 @@ dialog{border:0;border-radius:24px;padding:24px;width:min(460px,92vw);box-shadow
 /* BRANDING (optional): set a default name and a logo file kept beside this HTML file, e.g. logo:'logo.png'.
    If your Google Sheet has a 'Branding' tab and the Apps Script 'brand' action, those values override these. */
 window.BRAND={name:'PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR',logo:'logo.png'};
+const APP_VERSION='1.0.1'; // Increase this on every code release
 const K='school_library_v1',TABS=[['dash','🏠','Dashboard'],['books','📚','Books'],['members','🎓','Students'],['issue','🔖','Issue & return'],['rec','🧾','Records'],['rep','📊','Reports'],['set','⚙️','Settings']];
 const DEFAULT_GAS='https://script.google.com/macros/s/AKfycbytfyMqVRWRmxxzBwo9pz_XYuUA0qhUZ1R5DEQ9CG53vKP5-E2Mju8UXtxrDOTI2kJmdQ/exec';
 let D=load(),tab='dash',q='',flt='all',fh=null,tm1,tm2,me=null,pg=0,cf='',stu=null,idle;D.users=D.users||[];
@@ -152,5 +153,27 @@ async function sync(manual){if(!API()||!me||!S().tok)return;if(!navigator.onLine
  if(r.users){D.users=r.users;const m=r.users.find(x=>x.id==me.id);if(!m)return logout();me=S().me=m}
  if(r.Books){for(const n in NAMES)D[NAMES[n]]=(r[n]||[]).map(x=>({...x,copies:x.copies!==undefined?Number(x.copies):undefined}));D.updated=r.updated;S().synced=r.updated;persist();render();manual&&toast('Pulled latest from Google Sheets')}
  else{if(r.pushed)S().synced=sent;persist();manual&&toast(r.pushed?'Synced to Google Sheets':'Already up to date')}}catch(e){manual&&toast('Sync failed. Check the server URL and your internet')}}
-addEventListener('online',()=>{chips();sync(0)});addEventListener('offline',chips);brand().finally(boot);
+// Check GitHub Pages for a newer application build. This does not touch library data.
+let updatePrompted=false;
+async function checkAppUpdate(){
+  try{
+    const r=await fetch('./version.json?check='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const latest=await r.json();
+    if(latest.version && latest.version!==APP_VERSION && !updatePrompted){
+      updatePrompted=true;
+      if(confirm('A newer School Library Manager version ('+latest.version+') is available. Update now? Your books, students and records stored on this device will be preserved.')){
+        const u=new URL(location.href);
+        u.searchParams.set('appv',latest.version);
+        location.replace(u.toString());
+      }
+    }
+  }catch(e){}
+}
+addEventListener('online',()=>{chips();sync(0)});
+addEventListener('offline',chips);
+brand().finally(boot);
+checkAppUpdate();
+setInterval(checkAppUpdate,5*60*1000);
+
 </script></body></html>
