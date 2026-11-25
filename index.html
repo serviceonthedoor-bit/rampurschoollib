@@ -79,7 +79,7 @@ dialog{border:0;border-radius:24px;padding:24px;width:min(460px,92vw);box-shadow
 /* BRANDING (optional): set a default name and a logo file kept beside this HTML file, e.g. logo:'logo.png'.
    If your Google Sheet has a 'Branding' tab and the Apps Script 'brand' action, those values override these. */
 window.BRAND={name:'PM SHRI SHAHID INDER GIRI GOVT HSS RAMPUR',logo:'logo.png'};
-const APP_VERSION='1.1.0'; // Increase this on every code release
+const APP_VERSION='1.1.1'; // Increase this on every code release
 const K='school_library_v1',TABS=[['dash','🏠','Dashboard'],['books','📚','Books'],['members','🎓','Students'],['issue','🔖','Issue & return'],['rec','🧾','Records'],['rep','📊','Reports'],['set','⚙️','Settings']],STAB=[['find','🔎','Find books'],['my','🔖','My books']];
 const DEFAULT_GAS='https://script.google.com/macros/s/AKfycbzFlAGBjY65uusv7f4Swm8xu7kpCCI73c2k12vKfesXuj8lY5kQ-FUKIQ1RcwmrBH22oA/exec';
 let D=load(),tab='dash',q='',flt='all',fh=null,tm1,tm2,me=null,pg=0,cf='',stu=null,idle,icls='',bcls='';D.users=D.users||[];D.requests=D.requests||[];
@@ -248,21 +248,27 @@ async function sync(manual){if(!API()||!me||!S().tok)return;if(!navigator.onLine
  if(r.Books){for(const n in NAMES)D[NAMES[n]]=(r[n]||[]).map(x=>({...x,copies:x.copies!==undefined?Number(x.copies):undefined}));D.updated=r.updated;S().synced=r.updated;persist();refresh();manual&&toast('Pulled latest from Google Sheets')}
  else{if(r.pushed)S().synced=sent;persist();manual&&toast(r.pushed?'Synced to Google Sheets':'Already up to date');if(r.requests)refresh()}
  if(can(1))flushRq()}catch(e){manual&&toast('Sync failed. Check the server URL and your internet')}}
-// Check GitHub Pages for a newer application build. This does not touch library data.
+// Check GitHub Pages for a newer application build. This never touches library data (books, students, records).
+// It only reads version.json and compares version numbers. Prompts only for a NEWER version, and never loops:
+// after OK it is not asked again for that version; after Cancel it waits until tomorrow.
 let updatePrompted=false;
+const vnum=v=>String(v).replace(/[^0-9.]/g,'').split('.').map(n=>+n||0),
+ isNewer=(a,b)=>{const x=vnum(a),y=vnum(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(x[i]||0)-(y[i]||0);if(d)return d>0}return false};
 async function checkAppUpdate(){
   try{
+    if(updatePrompted)return;
     const r=await fetch('./version.json?check='+Date.now(),{cache:'no-store'});
     if(!r.ok)return;
-    const latest=await r.json();
-    if(latest.version && latest.version!==APP_VERSION && !updatePrompted){
-      updatePrompted=true;
-      if(confirm('A newer School Library Manager version ('+latest.version+') is available. Update now? Your books, students and records stored on this device will be preserved.')){
-        const u=new URL(location.href);
-        u.searchParams.set('appv',latest.version);
-        location.replace(u.toString());
-      }
-    }
+    const v=String((await r.json()).version||'');
+    if(!v||!isNewer(v,APP_VERSION))return;
+    if(localStorage.updDone==v||localStorage.updLater==v+'@'+today())return;
+    updatePrompted=true;
+    if(confirm('A newer School Library Manager version ('+v+') is available. Update now? Your books, students and records stored on this device will be preserved.')){
+      localStorage.updDone=v;
+      const u=new URL(location.href);u.searchParams.set('appv',v);
+      await fetch(u.toString(),{cache:'reload'}).catch(()=>{}); // refresh the cached copy of the app before reloading
+      location.replace(u.toString());
+    }else localStorage.updLater=v+'@'+today();
   }catch(e){}
 }
 addEventListener('online',()=>{chips();sync(0)});
